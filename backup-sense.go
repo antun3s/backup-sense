@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -18,6 +19,7 @@ const (
 	dirPermissions  = 0755
 	filePermissions = 0644
 	timestampFormat = "20060102-150405"
+	defaultPort     = 80
 )
 
 type PfSenseConfig struct {
@@ -36,9 +38,17 @@ type OPNsenseConfig struct {
 }
 
 func main() {
+	// Configuração do parâmetro de porta
+	port := flag.Int("p", defaultPort, "Porta para escutar as conexões")
+	flag.Parse()
+
+	// Configurar endpoint
 	http.HandleFunc("/upload", handleUpload)
-	log.Println("Backup server started on port 80...")
-	log.Fatal(http.ListenAndServe(":80", nil))
+
+	// Iniciar servidor na porta especificada
+	addr := fmt.Sprintf(":%d", *port)
+	log.Printf("Backup server started on port %d...", *port)
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
 func handleUpload(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +66,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	hostname, err := parseFirewallConfig(fileBytes, clientIP)
 	if err != nil {
-		handleError(w, "Invalid configuration")
+		handleError(w, "Invalid configuration", err, http.StatusBadRequest)
 		return
 	}
 
@@ -108,7 +118,7 @@ func parseFirewallConfig(fileBytes []byte, clientIP string) (string, error) {
 	case strings.Contains(content, "<opnsense>"):
 		return parseOPNSenseConfig(fileBytes)
 	default:
-		return "", fmt.Errorf("Unsupported XML type from %s", clientIP)
+		return "", fmt.Errorf("unsupported XML type")
 	}
 }
 
@@ -159,7 +169,7 @@ func saveBackupFile(hostname string, content []byte) (string, error) {
 func sendSuccessResponse(w http.ResponseWriter, clientIP, filePath string) {
 	response := fmt.Sprintf("Backup received from %s Saved to: %s", clientIP, filePath)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Backup received\n"))
+	w.Write([]byte(response + "\n"))
 	log.Println(response)
 }
 
