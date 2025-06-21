@@ -30,6 +30,12 @@ type OPNsenseConfig struct {
 }
 
 func handleUpload(w http.ResponseWriter, r *http.Request) {
+	// 0. Obter IP do cliente
+	clientIP := strings.Split(r.RemoteAddr, ":")[0]
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		clientIP = forwarded
+	}
+
 	// 1. Validar método HTTP
 	if r.Method != http.MethodPost {
 		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
@@ -87,7 +93,9 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		hostname = config.System.Hostname
 
 	default:
-		http.Error(w, "Tipo de firewall não suportado", http.StatusBadRequest)
+		errorMsg := fmt.Sprintf("Tipo de firewall não suportado recebido de %s", clientIP)
+		log.Println(errorMsg)
+		http.Error(w, errorMsg, http.StatusBadRequest)
 		return
 	}
 
@@ -118,9 +126,9 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 10. Resposta de sucesso
-	response := fmt.Sprintf("Backup recebido e armazenado em: %s", filePath)
+	response := fmt.Sprintf("Backup recebido de %s e armazenado em: %s", clientIP, filePath)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(response))
+	w.Write([]byte(response + "\n"))
 	log.Println(response)
 }
 
