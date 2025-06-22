@@ -14,13 +14,15 @@ import (
 )
 
 const (
-	maxUploadSize   = 10 << 20 // 10MB
 	backupBaseDir   = "./backup"
 	dirPermissions  = 0755
 	filePermissions = 0644
 	timestampFormat = "20060102-150405"
 	defaultPort     = 80
+	defaultMaxMB    = 10
 )
+
+var maxUploadSize int64
 
 type PfSenseConfig struct {
 	XMLName xml.Name `xml:"pfsense"`
@@ -38,16 +40,17 @@ type OPNsenseConfig struct {
 }
 
 func main() {
-	// Configuração do parâmetro de porta
-	port := flag.Int("p", defaultPort, "Porta para escutar as conexões")
+	port := flag.Int("p", defaultPort, "Listening Port")
+	maxMB := flag.Int("m", defaultMaxMB, "Maximum upload size in MB")
 	flag.Parse()
 
-	// Configurar endpoint
+	maxUploadSize = int64(*maxMB) << 20
+
 	http.HandleFunc("/upload", handleUpload)
 
-	// Iniciar servidor na porta especificada
 	addr := fmt.Sprintf(":%d", *port)
 	log.Printf("Backup server started on port %d...", *port)
+	log.Printf("Max upload size: %d MB (%d bytes)", *maxMB, maxUploadSize)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
@@ -55,6 +58,15 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	clientIP := getClientIP(r)
 
 	if !validateHTTPMethod(w, r) {
+		return
+	}
+
+	// Set the max size for the entire request
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+
+	// Parse form with a reasonable buffer size
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		handleError(w, "File too large", err, http.StatusBadRequest)
 		return
 	}
 
@@ -96,16 +108,16 @@ func validateHTTPMethod(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func readUploadedFile(r *http.Request) ([]byte, error) {
-	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-		return nil, fmt.Errorf("file too large: %w", err)
-	}
-
-	file, _, err := r.FormFile("file")
+	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving file: %w", err)
 	}
 	defer file.Close()
 
+	// Additional validation of file size
+	if fileHeader.Size > maxUploadSize {
+		return nil, fmt.Errorf("file too large (max %d MB)", maxUploadSize>>20)
+	}
 	return io.ReadAll(file)
 }
 
