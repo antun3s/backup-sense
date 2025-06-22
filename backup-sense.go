@@ -14,15 +14,18 @@ import (
 )
 
 const (
-	backupBaseDir   = "./backup"
-	dirPermissions  = 0755
-	filePermissions = 0644
-	timestampFormat = "20060102-150405"
-	defaultPort     = 80
-	defaultMaxMB    = 10
+	defaultBackupDir = "./backup"
+	defaultPort      = 80
+	defaultMaxMB     = 10
+	dirPermissions   = 0755
+	filePermissions  = 0644
+	timestampFormat  = "20060102-150405"
 )
 
-var maxUploadSize int64
+var (
+	maxUploadSize int64
+	backupDir     string
+)
 
 type PfSenseConfig struct {
 	XMLName xml.Name `xml:"pfsense"`
@@ -42,6 +45,7 @@ type OPNsenseConfig struct {
 func main() {
 	port := flag.Int("p", defaultPort, "Listening Port")
 	maxMB := flag.Int("m", defaultMaxMB, "Maximum upload size in MB")
+	flag.StringVar(&backupDir, "f", defaultBackupDir, "Backup directory path")
 	flag.Parse()
 
 	maxUploadSize = int64(*maxMB) << 20
@@ -51,6 +55,7 @@ func main() {
 	addr := fmt.Sprintf(":%d", *port)
 	log.Printf("Backup server started on port %d...", *port)
 	log.Printf("Max upload size: %d MB (%d bytes)", *maxMB, maxUploadSize)
+	log.Printf("Backup directory: %s", backupDir)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
@@ -61,10 +66,8 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set the max size for the entire request
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
-	// Parse form with a reasonable buffer size
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		handleError(w, "File too large", err, http.StatusBadRequest)
 		return
@@ -114,7 +117,6 @@ func readUploadedFile(r *http.Request) ([]byte, error) {
 	}
 	defer file.Close()
 
-	// Additional validation of file size
 	if fileHeader.Size > maxUploadSize {
 		return nil, fmt.Errorf("file too large (max %d MB)", maxUploadSize>>20)
 	}
@@ -164,13 +166,13 @@ func parseOPNSenseConfig(fileBytes []byte) (string, error) {
 }
 
 func saveBackupFile(hostname string, content []byte) (string, error) {
-	backupDir := filepath.Join(backupBaseDir, hostname)
-	if err := os.MkdirAll(backupDir, dirPermissions); err != nil {
+	backupPath := filepath.Join(backupDir, hostname)
+	if err := os.MkdirAll(backupPath, dirPermissions); err != nil {
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	filename := fmt.Sprintf("%s-%s.xml", hostname, time.Now().Format(timestampFormat))
-	filePath := filepath.Join(backupDir, filename)
+	filePath := filepath.Join(backupPath, filename)
 
 	if err := os.WriteFile(filePath, content, filePermissions); err != nil {
 		return "", fmt.Errorf("failed to write file: %w", err)
