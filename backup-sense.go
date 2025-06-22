@@ -169,7 +169,7 @@ func saveBackupFile(hostname string, content []byte) (string, error) {
 func sendSuccessResponse(w http.ResponseWriter, clientIP, filePath string) {
 	response := fmt.Sprintf("Backup received from %s Saved to: %s", clientIP, filePath)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(response + "\n"))
+	w.Write([]byte("Backup sent successfully\n"))
 	log.Println(response)
 }
 
