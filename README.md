@@ -38,8 +38,16 @@ Designed to be **minimal, focused, and reliable** - it does one thing well witho
 
 ### Client
 
+#### pfSense
+
 ```bash
-curl -X POST -F "file=@config.xml" http://yourserver:8080/upload
+curl -X POST -F "file=@/cf/conf/config.xml" http://yourserver:8080/upload
+```
+
+#### OPNsense
+
+```bash
+curl -X POST -F "file=@/conf/config.xml" http://yourserver:8080/upload
 ```
 
 ## Why This Exists
