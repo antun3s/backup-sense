@@ -1,7 +1,8 @@
-# Firewall Backup Server
+# backup-sense
 
 A simple, lightweight HTTP server to receive and store pfSense and OPNsense configuration backups.
-*Created by a Brazilian professional who needed a simple way to manage multiple pfSense and OPNsense backups with ❤️ and the Unix philosophy in mind*
+
+> Created by a Brazilian professional who needed a simple way to manage multiple pfSense and OPNsense backups with ❤️ and the Unix philosophy in mind
 
 ## Purpose
 
@@ -26,6 +27,7 @@ Designed to be **minimal, focused, and reliable** - it does one thing well witho
 ## Usage
 
 ### Server
+
 ```bash
 ./backup-server -p 8080 -m 20 -f /backup/storage
 ```
@@ -35,15 +37,19 @@ Designed to be **minimal, focused, and reliable** - it does one thing well witho
 - `-f`: Backup directory (default: ./backup)
 
 ### Client
+
 ```bash
 curl -X POST -F "file=@config.xml" http://yourserver:8080/upload
 ```
 
 ## Why This Exists
-Because sometimes you just need: 
+
+Because sometimes you just need:
+
 ```bash
 curl -F "file=@backup.xml" http://backup.example.com/upload
 ```
-...and nothing more. 
 
-*"Simplicity is the ultimate sophistication."*
+...and nothing more.
+
+> Simplicity is the ultimate sophistication.
