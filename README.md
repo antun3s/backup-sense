@@ -2,7 +2,7 @@
 
 A simple, lightweight HTTP server to receive and store pfSense and OPNsense configuration backups.
 
-> Created by a Brazilian professional who needed a simple way to manage multiple pfSense and OPNsense backups with ❤️ and the Unix philosophy in mind
+> Created by a Brazilian professional who needed a simple way to manage multiple pfSense and OPNsense backups with ❤️ and the Unix philosophy in mind.
 
 ## Purpose
 
@@ -26,28 +26,42 @@ Designed to be **minimal, focused, and reliable** - it does one thing well witho
 
 ## Usage
 
-### Server
+### Server Options
+
+#### Run Standalone Binary
 
 ```bash
-./backup-server -p 8080 -m 20 -f /backup/storage
+./backup-server -p 8008 -m 20 -f /backup/storage
 ```
+
+Options:
 
 - `-p`: Listening port (default: 80)
 - `-m`: Max upload size in MB (default: 10)
 - `-f`: Backup directory (default: ./backup)
 
-### Client
+#### Run via Docker
+
+```bash
+docker run -d \
+  -p 8008:80 \
+  -v ./local-backup:/backup \
+  --name backup-sense \
+  antun3s/backup-sense:latest
+```
+
+### Client Instructions
 
 #### pfSense
 
 ```bash
-curl -X POST -F "file=@/cf/conf/config.xml" http://yourserver:8080/upload
+curl -X POST -F "file=@/cf/conf/config.xml" http://yourserver:8008/upload
 ```
 
 #### OPNsense
 
 ```bash
-curl -X POST -F "file=@/conf/config.xml" http://yourserver:8080/upload
+curl -X POST -F "file=@/conf/config.xml" http://yourserver:8008/upload
 ```
 
 ## Why This Exists
@@ -55,7 +69,7 @@ curl -X POST -F "file=@/conf/config.xml" http://yourserver:8080/upload
 Because sometimes you just need:
 
 ```bash
-curl -F "file=@backup.xml" http://backup.example.com/upload
+curl -F "file=@backup.xml" http://backup.example.com:8008/upload
 ```
 
 ...and nothing more.

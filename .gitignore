@@ -2,3 +2,4 @@ backup-sample
 backup
 bin/backup-sense-amd64
 bin/backup-sense-arm64
+.dockerignore
