@@ -77,7 +77,7 @@ On WebGUI:
   - month: `*`
   - day of the week: *`
   - user: `root`
-  - command: `curl -X POST -F "file=@/cf/conf/config.xml" http://192.168.8.3:8081/upload` edit backup-sense server name and port
+  - command: `curl -X POST -F "file=@/cf/conf/config.xml" http://backup.example.com:8008/upload` edit backup-sense server name and port
 - Click on Apply
 
 </details>
@@ -90,7 +90,7 @@ On WebGUI:
 
 ```sh
 # create script
-printf '#\!/bin/sh\ncurl -X POST -F "file=@/conf/config.xml" http://192.168.8.3:8081/upload\n' > backup-sense.sh && chmod +x /root/backup-sense.sh
+printf '#\!/bin/sh\ncurl -X POST -F "file=@/conf/config.xml" http://backup.example.com:8008/upload\n' > backup-sense.sh && chmod +x /root/backup-sense.sh
 chmod +x /root/backup-sense.sh
 
 # create custon action
